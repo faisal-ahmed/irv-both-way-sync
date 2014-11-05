@@ -20,15 +20,17 @@ include_once 'ZohoIntegrator.php';
  * uploadPhoto              --- uploadPhoto
  * deleteRecords            --- deleteRecords
  * convertLead              --- convertLeadWithoutPotential
+ * getFields                --- getFields
  *
  **********************************************************************/
 
 class ZohoDataSync extends ZohoIntegrator
 {
-    public function __construct()
+    public function __construct($token = null)
     {
         $this->resetWithDefaults();
-        $authtokenSet = $this->setZohoAuthToken(AUTH_TOKEN);
+        $authToken = ($token === null) ? AUTH_TOKEN : $token;
+        $authtokenSet = $this->setZohoAuthToken($authToken);
         if ($authtokenSet !== true) {
             echo 'Please provide authtoken or set auth token first';
             die();
