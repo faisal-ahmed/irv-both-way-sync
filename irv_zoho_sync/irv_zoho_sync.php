@@ -299,7 +299,7 @@ function getZohoFields(){
     return $zohoFields;
 }
 
-function getWpFields(){
+function getWpFields($format = null){
     $wpExcludeMeta = array(
         "_product_images_gallery",
         "_video_1",
@@ -313,8 +313,118 @@ function getWpFields(){
     $wpFields = array();
     foreach ($meta_values as $key => $value) {
         if ($key[0] == '_' && !in_array($key, $wpExcludeMeta))
-            $wpFields[$value[0]] = ucwords(trim(str_replace("_", " ", $key)));
+            if ($format === null) {
+                $wpFields[$value[0]] = ucwords(trim(str_replace("_", " ", $key)));
+            } else {
+                $wpFields[$value[0]] = $key;
+            }
     }
 
     return $wpFields;
+}
+
+function syncFromZoho($zohoId, $post_id = null, $action){
+    $zohoConnector = new ZohoDataSync(get_option( 'irv_zoho_auth_token' ));
+
+    if ($action != 'delete') {
+        $wpFields = getWpFields(true);
+        $zohoData = $zohoConnector->getRecordById(PRODUCT_MODULE, $zohoId);
+        $xml = simplexml_load_string($zohoData);
+        $zohoFields = array();
+        foreach ($xml->result->Products->row as $key => $value) {
+            foreach ($value->FL as $key2 => $row) {
+                $zohoFields[(string)$row['val']] = trim($row);
+            }
+        }
+
+        $postMeta = array(
+            '_zoho_id' => $zohoId
+        );
+
+        for ($i = 4; $i < get_option( 'irv_zoho_sync_field_count', 5 ); $i++) {
+            $wpValue = get_option("irv_zoho_mapping_wpField_$i");
+            $zohoValue = get_option("irv_zoho_mapping_zohoField_$i");
+            if ($zohoValue != '') {
+                $postMeta[$wpFields[$wpValue]] = $zohoFields[str_replace("_", " ", $zohoValue)];
+            }
+        }
+
+        $post = array(
+            'post_title' => $zohoFields['Product Name'],
+            'post_type'   => 'vehicles',
+            'post_status'   => 'publish',
+            'post_author'   => 1,
+        );
+
+        if ($action === 'update') {
+            $post['ID'] = $zohoFields['WP Inventory ID'];
+        }
+
+        $id = wp_insert_post( $post , true);
+        var_dump($id);
+
+        if (isset($zohoFields['RV Status']) && $zohoFields['RV Status'] != '') {
+            $RVStatus = get_term_by('name', $zohoFields['RV Status'], 'vehicle_status');
+            unset($postMeta['_rv_status']);
+            wp_set_post_terms( $id, $RVStatus->term_id, 'vehicle_status' );
+        }
+
+        if (isset($zohoFields['RV Location']) && $zohoFields['RV Location'] != '') {
+            $RVStatus = get_term_by('name', $zohoFields['RV Location'], 'vehicle_location');
+            unset($postMeta['_rv_location']);
+            wp_set_post_terms( $id, $RVStatus->term_id, 'vehicle_location' );
+        }
+
+        if (isset($zohoFields['RV Year Of Manufacture']) && $zohoFields['RV Year Of Manufacture'] != '') {
+            $RVStatus = get_term_by('name', $zohoFields['RV Year Of Manufacture'], 'vehicle_year');
+            unset($postMeta['_rv_year_of_manufacture']);
+            wp_set_post_terms( $id, $RVStatus->term_id, 'vehicle_year' );
+        }
+
+        if (isset($zohoFields['RV Type']) && $zohoFields['RV Type'] != '') {
+            $RVStatus = get_term_by('name', $zohoFields['RV Type'], 'vehicle_type');
+            unset($postMeta['_rv_type']);
+            wp_set_post_terms( $id, $RVStatus->term_id, 'vehicle_type' );
+        }
+
+        unset($postMeta['_rv_make_model']);
+        $rv_make_model = array();
+        if (isset($zohoFields['RV Manufacture']) && $zohoFields['RV Manufacture'] != '') {
+            $temp = get_term_by('name', $zohoFields['RV Manufacture'], 'vehicle_model');
+            $rv_make_model[] = $temp->term_id;
+        }
+
+        if (isset($zohoFields['RV Make']) && $zohoFields['RV Make'] != '') {
+            $temp = get_term_by('name', $zohoFields['RV Make'], 'vehicle_model');
+            $rv_make_model[] = $temp->term_id;
+        }
+
+        if (isset($zohoFields['RV Model']) && $zohoFields['RV Model'] != '') {
+            $temp = get_term_by('name', $zohoFields['RV Model'], 'vehicle_model');
+            $rv_make_model[] = $temp->term_id;
+        }
+
+        wp_set_post_terms( $id, $rv_make_model, 'vehicle_model' );
+
+        foreach ($postMeta as $key => $value) {
+            $updateMeta = update_post_meta($id, substr($key, 1), $value);
+            debug($updateMeta);
+        }
+
+        if ($action === 'create') {
+            $xmlArray = array(
+                1 => array(
+                    'WP Inventory ID' => $id,
+                ),
+            );
+
+            $zohoPostUpdate = $zohoConnector->updateRecords(PRODUCT_MODULE, $zohoId, $xmlArray, 'true');
+            debug($zohoPostUpdate);
+        }
+        debug($postMeta);
+        debug(get_post_meta( $id ));
+    } else {
+        $delete_status = wp_delete_post($post_id);
+        debug($delete_status);
+    }
 }
