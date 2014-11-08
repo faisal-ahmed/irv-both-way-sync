@@ -19,157 +19,8 @@ function irv_zoho_options() {
 	if (!current_user_can('manage_options'))  {
 		wp_die( __('You do not have sufficient permissions to access this page.') );
 	}
-	
-    if( isset($_POST['irv_zoho_hidden']) && $_POST['irv_zoho_hidden'] == 'Y' ) {
-        update_option( 'irv_zoho_auth_token', $_POST['irv_zoho_auth_token'] );
-        update_option( 'irv_zoho_custom_post_slug', $_POST['irv_zoho_custom_post_slug'] );
-        update_option( 'irv_zoho_sync_field_count', $_POST['irv_zoho_sync_field_count'] );
-		echo '<div class="updated"><p><strong>Settings Saved.</strong></p></div>';
-	}
 
-    if( isset($_POST['zoho_irv_mapping']) && $_POST['zoho_irv_mapping'] == 'Y' ) {
-        for ($i = 1; $i < get_option( 'irv_zoho_sync_field_count', 5 ); $i++) {
-            $key1 = "irv_zoho_mapping_wpField_$i";
-            $value1 = $_POST["irv_zoho_mapping_wpField_$i"];
-            update_option( $key1, $value1 );
-            $key = "irv_zoho_mapping_zohoField_$i";
-            $value = $_POST["irv_zoho_mapping_zohoField_$i"];
-            update_option( $key, $value );
-        }
-		echo '<div class="updated"><p><strong>Settings Saved.</strong></p></div>';
-	}
-
-    $zohoFields = getZohoFields();
-    $wpFields = getWpFields();
-
-    ?>
-<link rel="stylesheet" href="<?php echo plugin_dir_url( __FILE__ ); ?>style.css" type="text/css"/>
-<link rel="stylesheet" href="<?php echo plugin_dir_url( __FILE__ ); ?>select2/select2.css" type="text/css"/>
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script>
-<script type="text/javascript" src="<?php echo plugin_dir_url( __FILE__ ); ?>select2/select2.js"></script>
-<h2>IRV Zoho Sync Tools Settings</h2>
-<form name="form1" method="post" action="">
-	<input type="hidden" name="irv_zoho_hidden" value="Y">
-    <div class="zoho_irv_settings_form">
-        <span>
-            <label style="width: 155px; display: inline-block;">Zoho Auto Token:</label>
-            <input style="width: 200px" type="text" name="irv_zoho_auth_token" value="<?php echo get_option( 'irv_zoho_auth_token' ); ?>" size="50">
-        </span>
-        <span>
-            <label style="width: 155px; display: inline-block;">Wordpress Post Type Slug to Sync:</label>
-            <input style="width: 200px" type="text" name="irv_zoho_custom_post_slug" value="<?php echo get_option( 'irv_zoho_custom_post_slug' ); ?>" size="50">
-        </span>
-    </div>
-    <div class="zoho_irv_settings_form">
-        <span>
-            <label style="width: 155px; display: inline-block;">Zoho Module Name to Sync:</label>
-            <input style="width: 200px" type="text" disabled="disabled" name="irv_zoho_module_name" value="Zoho Products" size="50">
-        </span>
-        <span>
-            <label style="width: 155px; display: inline-block;">How many fields to sync:</label>
-            <input style="width: 200px" type="number" name="irv_zoho_sync_field_count" min="5" value="<?php echo get_option( 'irv_zoho_sync_field_count', 2 ); ?>" size="50">
-        </span>
-    </div>
-    <div class="zoho_irv_settings_form">
-        <p class="submit">
-            <input type="submit" name="Submit" class="button-primary" value="<?php esc_attr_e('Save Changes') ?>" />
-        </p>
-    </div>
-	<hr />
-</form>
-
-<form name="mapping" method="post" action="">
-    <input type="hidden" name="zoho_irv_mapping" value="Y" />
-    <div class="zoho_irv_settings_form">
-        <span>
-            <label>Zoho Field: </label>
-            <select name="irv_zoho_mapping_zohoField_0" disabled="disabled" style="width: 200px">
-                <option value="Product_Name">Product Name</option>
-            </select>
-            <span>&nbsp;<<===>>&nbsp;</span>
-            <label>WP Inventory Field: </label>
-            <select name="irv_zoho_mapping_wpField_0" disabled="disabled" style="width: 200px">
-                <option value="title">Post Title</option>
-            </select>
-        </span>
-    </div>
-    <div class="zoho_irv_settings_form">
-        <span>
-            <label>Zoho Field: </label>
-            <select name="irv_zoho_mapping_zohoField_1" disabled="disabled" style="width: 200px">
-                <option value="Link_to_listing">Link to listing</option>
-            </select>
-            <span>&nbsp;<<===>>&nbsp;</span>
-            <label>WP Inventory Field: </label>
-            <select name="irv_zoho_mapping_wpField_1" disabled="disabled" style="width: 200px">
-                <option value="permalink">Post URL</option>
-            </select>
-        </span>
-    </div>
-    <div class="zoho_irv_settings_form">
-        <span>
-            <label>Zoho Field: </label>
-            <select name="irv_zoho_mapping_zohoField_2" disabled="disabled" style="width: 200px">
-                <option value="Image_1">Image 1</option>
-            </select>
-            <span>&nbsp;<<===>>&nbsp;</span>
-            <label>WP Inventory Field: </label>
-            <select name="irv_zoho_mapping_wpField_2" disabled="disabled" style="width: 200px">
-                <option value="product_images_gallery">First Attached Image (If Any)</option>
-            </select>
-        </span>
-    </div>
-    <div class="zoho_irv_settings_form">
-        <span>
-            <label>Zoho Field: </label>
-            <select name="irv_zoho_mapping_zohoField_3" disabled="disabled" style="width: 200px">
-                <option value="Image_2">Image 2</option>
-            </select>
-            <span>&nbsp;<<===>>&nbsp;</span>
-            <label>WP Inventory Field: </label>
-            <select name="irv_zoho_mapping_wpField_3" disabled="disabled" style="width: 200px">
-                <option value="product_images_gallery">Second Attached Image (If Any)</option>
-            </select>
-        </span>
-    </div>
-    <?php for ($i = 4; $i < get_option( 'irv_zoho_sync_field_count', 5 ); $i++) { ?>
-        <div class="zoho_irv_settings_form">
-            <span>
-                <label>Zoho Field: </label>
-                <select id="irv_zoho_mapping_zohoField_<?php echo $i ?>" name="irv_zoho_mapping_zohoField_<?php echo $i ?>" style="width: 200px">
-                    <option value="">None</option>
-                    <?php foreach ($zohoFields as $key => $value) {
-                        $selected = ($key == get_option("irv_zoho_mapping_zohoField_$i")) ? "selected=\"selected\"" : "";
-                        echo "<option " . $selected . " value=\"{$key}\">$value</option>";
-                    } ?>
-                </select>
-                <span>&nbsp;&nbsp;<<===>>&nbsp;&nbsp;</span>
-                <label>WP Inventory Field: </label>
-                <select id="irv_zoho_mapping_wpField_<?php echo $i ?>" name="irv_zoho_mapping_wpField_<?php echo $i ?>" style="width: 200px">
-                    <option value="">None</option>
-                    <?php foreach ($wpFields as $key => $value) {
-                        $selected = ($key == get_option("irv_zoho_mapping_wpField_$i")) ? "selected=\"selected\"" : "";
-                        echo "<option " . $selected . " value=\"{$key}\">$value</option>";
-                    } ?>
-                </select>
-            </span>
-            <script type="text/javascript">
-                $(function() {
-                    $("#irv_zoho_mapping_zohoField_<?php echo $i ?>").select2();
-                    $("#irv_zoho_mapping_wpField_<?php echo $i ?>").select2();
-                });
-            </script>
-        </div>
-    <?php } ?>
-    <div class="zoho_irv_settings_form">
-        <p class="submit">
-            <input type="submit" name="Submit" class="button-primary" value="<?php esc_attr_e('Save Changes') ?>" />
-        </p>
-    </div>
-    <hr />
-</form>
-
-<?php	
+    echo "This is working";
 }
 
 function save_inventory( $post_id ) {
@@ -252,6 +103,12 @@ function save_inventory( $post_id ) {
             $xmlArray[1]['RV Manufacture'] = $grandParent;
             $xmlArray[1]['RV Make'] = $parent;
             $xmlArray[1]['RV Model'] = $child;
+        }
+
+        foreach ($xmlArray[1] as $key => $value) {
+            if ($value == '') {
+                unset($xmlArray[1][$key]);
+            }
         }
 
         //debug($_REQUEST);

@@ -3,18 +3,6 @@
 include_once 'Utilities.php';
 include_once 'ZohoIntegrator.php';
 
-/***********************************************************************
- *
- * INCLUDED ZOHO API        --- API NAME IN THIS LIBRARY
- * ---------------------------------------------------------------------
- * getRecordById            --- getRecordById
- * insertRecords            --- insertRecords
- * updateRecords            --- updateRecords
- * deleteRecords            --- deleteRecords
- * getFields                --- getFields
- *
- **********************************************************************/
-
 class ZohoDataSync extends ZohoIntegrator
 {
     public function __construct($token = null)
@@ -83,30 +71,18 @@ class ZohoDataSync extends ZohoIntegrator
         return $this->doRequest();
     }
 
-    public function insertRecords($moduleName, $xmlArray, $duplicateCheck = 'false', $wfTrigger = 'false', $version = 'false')
+    public function insertRecords($moduleName, $xmlArray, $wfTrigger = 'false')
     {
         $this->resetWithDefaults();
         $this->setZohoModuleName("$moduleName");
         $this->setZohoApiOperationType('insertRecords');
         $this->setRequestMethod('POST');
-        if ($duplicateCheck != 'false' && count($xmlArray) > 1 ) {
-            $version = 4;
-            $this->setZohoExtendedUriParameter(array('duplicateCheck' => (int)$duplicateCheck));
-        }
         if ($wfTrigger != 'false') $this->setWfTrigger($wfTrigger);
-        if ($version != 'false') $this->setMultipleOperation($version);
         if (($xmlSet = $this->setZohoXmlColumnNameAndValue($xmlArray)) !== true) return $xmlSet;
 
         return $this->doRequest();
     }
 
-    /*
-     * Param: @type
-     * Empty - To retrieve all fields from the module
-     * 1 - To retrieve all fields from the summary view
-     * 2 - To retrieve all mandatory fields from the module
-     *
-    */
     public function getFields($moduleName, $type = null) // 1 for all fields and 2 for mandatory fields
     {
         $this->resetWithDefaults();
@@ -120,14 +96,6 @@ class ZohoDataSync extends ZohoIntegrator
         }
 
         return $this->doRequest();
-    }
-
-    public function errorFound($xml) {
-        if ((isset($xml->nodata->code) && trim($xml->nodata->code) !== "")
-            || (isset($xml->error->code) && trim($xml->error->code) !== "")) {
-            return true;
-        }
-        return false;
     }
 }
 
